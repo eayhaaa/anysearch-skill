@@ -11,16 +11,18 @@ $ENDPOINT = "https://api.anysearch.com/mcp"
 $SCRIPT_DIR = Split-Path -Parent $MyInvocation.MyCommand.Definition
 
 function Load-Env {
-    $envPath = Join-Path $SCRIPT_DIR ".env"
-    if (Test-Path $envPath) {
-        Get-Content $envPath -Encoding UTF8 | ForEach-Object {
-            $line = $_.Split('#')[0].Trim()
-            if ($line -and $line -match '=') {
-                $idx = $line.IndexOf('=')
-                $key = $line.Substring(0, $idx).Trim()
-                $val = $line.Substring($idx + 1).Trim().Trim('"').Trim("'")
-                if (-not (Test-Path "env:$key")) {
-                    Set-Item -Path "env:$key" -Value $val
+    $envPaths = @(Join-Path $SCRIPT_DIR ".env", Join-Path $SCRIPT_DIR ".." ".env")
+    foreach ($envPath in $envPaths) {
+        if (Test-Path $envPath) {
+            Get-Content $envPath -Encoding UTF8 | ForEach-Object {
+                $line = $_.Split('#')[0].Trim()
+                if ($line -and $line -match '=') {
+                    $idx = $line.IndexOf('=')
+                    $key = $line.Substring(0, $idx).Trim()
+                    $val = $line.Substring($idx + 1).Trim().Trim('"').Trim("'")
+                    if (-not (Test-Path "env:$key")) {
+                        Set-Item -Path "env:$key" -Value $val
+                    }
                 }
             }
         }
@@ -336,7 +338,7 @@ function Show-Doc {
 ## CLI Invocation (PowerShell)
 
 ```powershell
-powershell -File <skill_dir>/anysearch_cli.ps1 <command> [options]
+powershell -ExecutionPolicy Bypass -File <skill_dir>/scripts/anysearch_cli.ps1 <command> [options]
 ```
 
 ## Available Commands
@@ -392,17 +394,17 @@ Truncated at 50,000 chars. HTML pages only.
 User query
   |
   +-- Has structured identifiers? (Stock:/CVE:/DOI:/IATA:/patent etc.)
-  |     YES -> 1) powershell -File anysearch_cli.ps1 list_domains --domain X
+  |     YES -> 1) powershell -ExecutionPolicy Bypass -File scripts/anysearch_cli.ps1 list_domains --domain X
   |             2) read query_format from result -> construct query accordingly
-  |             3) powershell -File anysearch_cli.ps1 search "<query>" --domain X --sub_domain Y --zone cn
+  |             3) powershell -ExecutionPolicy Bypass -File scripts/anysearch_cli.ps1 search "<query>" --domain X --sub_domain Y --zone cn
   |
   +-- Multiple independent intents?
-  |     YES -> powershell -File anysearch_cli.ps1 batch_search --query "..." --query "..."
+  |     YES -> powershell -ExecutionPolicy Bypass -File scripts/anysearch_cli.ps1 batch_search --query "..." --query "..."
   |
   +-- Need deeper content than snippets?
-        YES -> powershell -File anysearch_cli.ps1 extract "https://example.com/article"
+        YES -> powershell -ExecutionPolicy Bypass -File scripts/anysearch_cli.ps1 extract "https://example.com/article"
 
-  Otherwise -> powershell -File anysearch_cli.ps1 search "<general query>"
+  Otherwise -> powershell -ExecutionPolicy Bypass -File scripts/anysearch_cli.ps1 search "<general query>"
 ```
 
 ---
@@ -431,21 +433,21 @@ and strictly obey the returned semantic constraints:
 ### Scenario 1: General web search — look up a factual question
 
 ```powershell
-powershell -File anysearch_cli.ps1 search "What is the capital of France"
+powershell -ExecutionPolicy Bypass -File scripts/anysearch_cli.ps1 search "What is the capital of France"
 ```
 
 ```powershell
-powershell -File anysearch_cli.ps1 search "quantum computing breakthroughs 2025" --max_results 5 --freshness month
+powershell -ExecutionPolicy Bypass -File scripts/anysearch_cli.ps1 search "quantum computing breakthroughs 2025" --max_results 5 --freshness month
 ```
 
 ### Scenario 2: Search with content type filter — find video or image results
 
 ```powershell
-powershell -File anysearch_cli.ps1 search "how to bake sourdough bread" --content_types video --max_results 3
+powershell -ExecutionPolicy Bypass -File scripts/anysearch_cli.ps1 search "how to bake sourdough bread" --content_types video --max_results 3
 ```
 
 ```powershell
-powershell -File anysearch_cli.ps1 search "Mount Everest" --content_types image --max_results 5
+powershell -ExecutionPolicy Bypass -File scripts/anysearch_cli.ps1 search "Mount Everest" --content_types image --max_results 5
 ```
 
 ### Scenario 3: Vertical search — stock market data (structured identifier)
@@ -453,93 +455,93 @@ powershell -File anysearch_cli.ps1 search "Mount Everest" --content_types image 
 Step 1: Discover available sub_domains for finance:
 
 ```powershell
-powershell -File anysearch_cli.ps1 list_domains --domain finance
+powershell -ExecutionPolicy Bypass -File scripts/anysearch_cli.ps1 list_domains --domain finance
 ```
 
 Step 2: Search with the correct sub_domain and query format:
 
 ```powershell
-powershell -File anysearch_cli.ps1 search "AAPL" --domain finance --sub_domain finance.us_stock --zone cn --max_results 5
+powershell -ExecutionPolicy Bypass -File scripts/anysearch_cli.ps1 search "AAPL" --domain finance --sub_domain finance.us_stock --zone cn --max_results 5
 ```
 
 ### Scenario 4: Vertical search — academic paper lookup
 
 ```powershell
-powershell -File anysearch_cli.ps1 list_domains --domain academic
+powershell -ExecutionPolicy Bypass -File scripts/anysearch_cli.ps1 list_domains --domain academic
 ```
 
 ```powershell
-powershell -File anysearch_cli.ps1 search "10.1038/s41586-020-2649-2" --domain academic --sub_domain academic.doi --max_results 3
+powershell -ExecutionPolicy Bypass -File scripts/anysearch_cli.ps1 search "10.1038/s41586-020-2649-2" --domain academic --sub_domain academic.doi --max_results 3
 ```
 
 ### Scenario 5: Vertical search — security vulnerability (CVE)
 
 ```powershell
-powershell -File anysearch_cli.ps1 list_domains --domain security
+powershell -ExecutionPolicy Bypass -File scripts/anysearch_cli.ps1 list_domains --domain security
 ```
 
 ```powershell
-powershell -File anysearch_cli.ps1 search "CVE-2024-3094" --domain security --sub_domain security.cve --max_results 3
+powershell -ExecutionPolicy Bypass -File scripts/anysearch_cli.ps1 search "CVE-2024-3094" --domain security --sub_domain security.cve --max_results 3
 ```
 
 ### Scenario 6: Vertical search — legal document or case
 
 ```powershell
-powershell -File anysearch_cli.ps1 list_domains --domain legal
+powershell -ExecutionPolicy Bypass -File scripts/anysearch_cli.ps1 list_domains --domain legal
 ```
 
 ```powershell
-powershell -File anysearch_cli.ps1 search "contract dispute damages" --domain legal --sub_domain legal.case_law --max_results 5
+powershell -ExecutionPolicy Bypass -File scripts/anysearch_cli.ps1 search "contract dispute damages" --domain legal --sub_domain legal.case_law --max_results 5
 ```
 
 ### Scenario 7: Batch search — multiple independent queries in one call
 
 ```powershell
-powershell -File anysearch_cli.ps1 batch_search --query "AAPL stock price" --query "TSLA earnings 2025" --query "GOOG market cap"
+powershell -ExecutionPolicy Bypass -File scripts/anysearch_cli.ps1 batch_search --query "AAPL stock price" --query "TSLA earnings 2025" --query "GOOG market cap"
 ```
 
 With full query objects (recommended for PowerShell to avoid quote-stripping issues):
 
 ```powershell
-powershell -File anysearch_cli.ps1 batch_search --query AAPL --query TSLA --query GOOG
+powershell -ExecutionPolicy Bypass -File scripts/anysearch_cli.ps1 batch_search --query AAPL --query TSLA --query GOOG
 ```
 
 From a JSON file:
 
 ```powershell
-powershell -File anysearch_cli.ps1 batch_search --queries @queries.json
+powershell -ExecutionPolicy Bypass -File scripts/anysearch_cli.ps1 batch_search --queries @queries.json
 ```
 
 ### Scenario 8: Extract full page content
 
 ```powershell
-powershell -File anysearch_cli.ps1 extract "https://en.wikipedia.org/wiki/Quantum_computing"
+powershell -ExecutionPolicy Bypass -File scripts/anysearch_cli.ps1 extract "https://en.wikipedia.org/wiki/Quantum_computing"
 ```
 
 ```powershell
-powershell -File anysearch_cli.ps1 extract --url "https://example.com/news/article-12345"
+powershell -ExecutionPolicy Bypass -File scripts/anysearch_cli.ps1 extract --url "https://example.com/news/article-12345"
 ```
 
 ### Scenario 9: News search with time filter
 
 ```powershell
-powershell -File anysearch_cli.ps1 search "AI regulation" --content_types news --freshness day --max_results 5
+powershell -ExecutionPolicy Bypass -File scripts/anysearch_cli.ps1 search "AI regulation" --content_types news --freshness day --max_results 5
 ```
 
 ### Scenario 10: Search with API key
 
 ```powershell
-powershell -File anysearch_cli.ps1 search "climate change policy 2025" --api_key sk_xxxxxxxxxxxxxx --max_results 3
+powershell -ExecutionPolicy Bypass -File scripts/anysearch_cli.ps1 search "climate change policy 2025" --api_key sk_xxxxxxxxxxxxxx --max_results 3
 ```
 
 ### Scenario 11: China-specific vertical search (requires zone=cn)
 
 ```powershell
-powershell -File anysearch_cli.ps1 list_domains --domain finance
+powershell -ExecutionPolicy Bypass -File scripts/anysearch_cli.ps1 list_domains --domain finance
 ```
 
 ```powershell
-powershell -File anysearch_cli.ps1 search "600519" --domain finance --sub_domain finance.cn_stock --zone cn --max_results 5
+powershell -ExecutionPolicy Bypass -File scripts/anysearch_cli.ps1 search "600519" --domain finance --sub_domain finance.cn_stock --zone cn --max_results 5
 ```
 
 ---

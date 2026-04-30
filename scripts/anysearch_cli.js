@@ -24,16 +24,18 @@ const FRESHNESS_VALUES = ["day","week","month","year"];
 const ZONES = ["cn","intl"];
 
 function loadEnv() {
-  const envPath = path.join(__dirname, ".env");
-  if (fs.existsSync(envPath)) {
-    const lines = fs.readFileSync(envPath, "utf-8").split(/\r?\n/);
-    for (const raw of lines) {
-      const line = raw.replace(/#.*$/, "").trim();
-      if (!line || line.indexOf("=") === -1) continue;
-      const idx = line.indexOf("=");
-      const key = line.substring(0, idx).trim();
-      let val = line.substring(idx + 1).trim().replace(/^["']|["']$/g, "");
-      if (!(key in process.env)) process.env[key] = val;
+  const envPaths = [path.join(__dirname, ".env"), path.join(__dirname, "..", ".env")];
+  for (const envPath of envPaths) {
+    if (fs.existsSync(envPath)) {
+      const lines = fs.readFileSync(envPath, "utf-8").split(/\r?\n/);
+      for (const raw of lines) {
+        const line = raw.replace(/#.*$/, "").trim();
+        if (!line || line.indexOf("=") === -1) continue;
+        const idx = line.indexOf("=");
+        const key = line.substring(0, idx).trim();
+        let val = line.substring(idx + 1).trim().replace(/^["']|["']$/g, "");
+        if (!(key in process.env)) process.env[key] = val;
+      }
     }
   }
 }
@@ -286,7 +288,7 @@ function cmdDoc() {
 ## CLI Invocation (Node.js)
 
 \`\`\`
-node <skill_dir>/anysearch_cli.js <command> [options]
+node <skill_dir>/scripts/anysearch_cli.js <command> [options]
 \`\`\`
 
 ## Available Commands
@@ -342,17 +344,17 @@ Truncated at 50,000 chars. HTML pages only.
 User query
   |
   +-- Has structured identifiers? (Stock:/CVE:/DOI:/IATA:/patent etc.)
-  |     YES -> 1) node anysearch_cli.js list_domains --domain X
+  |     YES -> 1) node scripts/anysearch_cli.js list_domains --domain X
   |             2) read query_format from result -> construct query accordingly
-  |             3) node anysearch_cli.js search "<query>" --domain X --sub_domain Y --zone cn
+  |             3) node scripts/anysearch_cli.js search "<query>" --domain X --sub_domain Y --zone cn
   |
   +-- Multiple independent intents?
-  |     YES -> node anysearch_cli.js batch_search --query "..." --query "..."
+  |     YES -> node scripts/anysearch_cli.js batch_search --query "..." --query "..."
   |
   +-- Need deeper content than snippets?
-        YES -> node anysearch_cli.js extract "https://example.com/article"
+        YES -> node scripts/anysearch_cli.js extract "https://example.com/article"
 
-  Otherwise -> node anysearch_cli.js search "<general query>"
+  Otherwise -> node scripts/anysearch_cli.js search "<general query>"
 \`\`\`
 
 ---
@@ -381,21 +383,21 @@ and strictly obey the returned semantic constraints:
 ### Scenario 1: General web search — look up a factual question
 
 \`\`\`bash
-node anysearch_cli.js search "What is the capital of France"
+node scripts/anysearch_cli.js search "What is the capital of France"
 \`\`\`
 
 \`\`\`bash
-node anysearch_cli.js search "quantum computing breakthroughs 2025" --max_results 5 --freshness month
+node scripts/anysearch_cli.js search "quantum computing breakthroughs 2025" --max_results 5 --freshness month
 \`\`\`
 
 ### Scenario 2: Search with content type filter — find video or image results
 
 \`\`\`bash
-node anysearch_cli.js search "how to bake sourdough bread" --content_types video --max_results 3
+node scripts/anysearch_cli.js search "how to bake sourdough bread" --content_types video --max_results 3
 \`\`\`
 
 \`\`\`bash
-node anysearch_cli.js search "Mount Everest" --content_types image --max_results 5
+node scripts/anysearch_cli.js search "Mount Everest" --content_types image --max_results 5
 \`\`\`
 
 ### Scenario 3: Vertical search — stock market data (structured identifier)
@@ -403,69 +405,69 @@ node anysearch_cli.js search "Mount Everest" --content_types image --max_results
 Step 1: Discover available sub_domains for finance:
 
 \`\`\`bash
-node anysearch_cli.js list_domains --domain finance
+node scripts/anysearch_cli.js list_domains --domain finance
 \`\`\`
 
 Step 2: Search with the correct sub_domain and query format:
 
 \`\`\`bash
-node anysearch_cli.js search "AAPL" --domain finance --sub_domain finance.us_stock --zone cn --max_results 5
+node scripts/anysearch_cli.js search "AAPL" --domain finance --sub_domain finance.us_stock --zone cn --max_results 5
 \`\`\`
 
 ### Scenario 4: Vertical search — academic paper lookup
 
 \`\`\`bash
-node anysearch_cli.js list_domains --domain academic
+node scripts/anysearch_cli.js list_domains --domain academic
 \`\`\`
 
 \`\`\`bash
-node anysearch_cli.js search "10.1038/s41586-020-2649-2" --domain academic --sub_domain academic.doi --max_results 3
+node scripts/anysearch_cli.js search "10.1038/s41586-020-2649-2" --domain academic --sub_domain academic.doi --max_results 3
 \`\`\`
 
 ### Scenario 5: Vertical search — security vulnerability (CVE)
 
 \`\`\`bash
-node anysearch_cli.js list_domains --domain security
+node scripts/anysearch_cli.js list_domains --domain security
 \`\`\`
 
 \`\`\`bash
-node anysearch_cli.js search "CVE-2024-3094" --domain security --sub_domain security.cve --max_results 3
+node scripts/anysearch_cli.js search "CVE-2024-3094" --domain security --sub_domain security.cve --max_results 3
 \`\`\`
 
 ### Scenario 6: Batch search — multiple independent queries in one call
 
 \`\`\`bash
-node anysearch_cli.js batch_search --query "AAPL stock price" --query "TSLA earnings 2025" --query "GOOG market cap"
+node scripts/anysearch_cli.js batch_search --query "AAPL stock price" --query "TSLA earnings 2025" --query "GOOG market cap"
 \`\`\`
 
 With full query objects:
 
 \`\`\`bash
-node anysearch_cli.js batch_search --queries '[{"query":"AAPL","domain":"finance","sub_domain":"finance.us_stock"},{"query":"python async http","domain":"code","sub_domain":"code.general"}]'
+node scripts/anysearch_cli.js batch_search --queries '[{"query":"AAPL","domain":"finance","sub_domain":"finance.us_stock"},{"query":"python async http","domain":"code","sub_domain":"code.general"}]'
 \`\`\`
 
 ### Scenario 7: Extract full page content
 
 \`\`\`bash
-node anysearch_cli.js extract "https://en.wikipedia.org/wiki/Quantum_computing"
+node scripts/anysearch_cli.js extract "https://en.wikipedia.org/wiki/Quantum_computing"
 \`\`\`
 
 ### Scenario 8: News search with time filter
 
 \`\`\`bash
-node anysearch_cli.js search "AI regulation" --content_types news --freshness day --max_results 5
+node scripts/anysearch_cli.js search "AI regulation" --content_types news --freshness day --max_results 5
 \`\`\`
 
 ### Scenario 9: Search with API key
 
 \`\`\`bash
-node anysearch_cli.js search "climate change policy 2025" --api_key sk_xxxxxxxxxxxxxx --max_results 3
+node scripts/anysearch_cli.js search "climate change policy 2025" --api_key sk_xxxxxxxxxxxxxx --max_results 3
 \`\`\`
 
 ### Scenario 10: China-specific vertical search (requires zone=cn)
 
 \`\`\`bash
-node anysearch_cli.js search "600519" --domain finance --sub_domain finance.cn_stock --zone cn --max_results 5
+node scripts/anysearch_cli.js search "600519" --domain finance --sub_domain finance.cn_stock --zone cn --max_results 5
 \`\`\`
 
 ---

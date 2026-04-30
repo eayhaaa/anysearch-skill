@@ -17,20 +17,21 @@ ENDPOINT = "https://api.anysearch.com/mcp"
 
 
 def _load_env():
-    env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
-    if os.path.isfile(env_path):
-        with open(env_path, "r", encoding="utf-8") as f:
-            for line in f:
-                line = line.strip()
-                if not line or line.startswith("#"):
-                    continue
-                if "=" not in line:
-                    continue
-                key, _, value = line.partition("=")
-                key = key.strip()
-                value = value.strip().strip("\"'")
-                if key not in os.environ:
-                    os.environ[key] = value
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    for env_path in [os.path.join(script_dir, ".env"), os.path.join(script_dir, "..", ".env")]:
+        if os.path.isfile(env_path):
+            with open(env_path, "r", encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if not line or line.startswith("#"):
+                        continue
+                    if "=" not in line:
+                        continue
+                    key, _, value = line.partition("=")
+                    key = key.strip()
+                    value = value.strip().strip("\"'")
+                    if key not in os.environ:
+                        os.environ[key] = value
 
 
 _load_env()
@@ -290,7 +291,7 @@ DOC_SPEC = """\
 ## CLI Invocation (Python)
 
 ```
-python <skill_dir>/anysearch_cli.py <command> [options]
+python <skill_dir>/scripts/anysearch_cli.py <command> [options]
 ```
 
 ## Available Commands
@@ -346,17 +347,17 @@ Truncated at 50,000 chars. HTML pages only.
 User query
   |
   +-- Has structured identifiers? (Stock:/CVE:/DOI:/IATA:/patent etc.)
-  |     YES -> 1) python anysearch_cli.py list_domains --domain X
+  |     YES -> 1) python scripts/anysearch_cli.py list_domains --domain X
   |             2) read query_format from result -> construct query accordingly
-  |             3) python anysearch_cli.py search "<query>" --domain X --sub_domain Y --zone cn
+  |             3) python scripts/anysearch_cli.py search "<query>" --domain X --sub_domain Y --zone cn
   |
   +-- Multiple independent intents?
-  |     YES -> python anysearch_cli.py batch_search --query "..." --query "..."
+  |     YES -> python scripts/anysearch_cli.py batch_search --query "..." --query "..."
   |
   +-- Need deeper content than snippets?
-        YES -> python anysearch_cli.py extract "https://example.com/article"
+        YES -> python scripts/anysearch_cli.py extract "https://example.com/article"
 
-  Otherwise -> python anysearch_cli.py search "<general query>"
+  Otherwise -> python scripts/anysearch_cli.py search "<general query>"
 ```
 
 ---
@@ -386,21 +387,21 @@ and strictly obey the returned semantic constraints:
 ### Scenario 1: General web search — look up a factual question
 
 ```bash
-python anysearch_cli.py search "What is the capital of France"
+python scripts/anysearch_cli.py search "What is the capital of France"
 ```
 
 ```bash
-python anysearch_cli.py search "quantum computing breakthroughs 2025" --max_results 5 --freshness month
+python scripts/anysearch_cli.py search "quantum computing breakthroughs 2025" --max_results 5 --freshness month
 ```
 
 ### Scenario 2: Search with content type filter — find video or image results
 
 ```bash
-python anysearch_cli.py search "how to bake sourdough bread" --content_types video --max_results 3
+python scripts/anysearch_cli.py search "how to bake sourdough bread" --content_types video --max_results 3
 ```
 
 ```bash
-python anysearch_cli.py search "Mount Everest" --content_types image --max_results 5
+python scripts/anysearch_cli.py search "Mount Everest" --content_types image --max_results 5
 ```
 
 ### Scenario 3: Vertical search — stock market data (structured identifier)
@@ -408,13 +409,13 @@ python anysearch_cli.py search "Mount Everest" --content_types image --max_resul
 Step 1: Discover available sub_domains for finance:
 
 ```bash
-python anysearch_cli.py list_domains --domain finance
+python scripts/anysearch_cli.py list_domains --domain finance
 ```
 
 Step 2: Search with the correct sub_domain and query format (e.g. US stock):
 
 ```bash
-python anysearch_cli.py search "AAPL" --domain finance --sub_domain finance.us_stock --zone cn --max_results 5
+python scripts/anysearch_cli.py search "AAPL" --domain finance --sub_domain finance.us_stock --zone cn --max_results 5
 ```
 
 ### Scenario 4: Vertical search — academic paper lookup
@@ -422,89 +423,89 @@ python anysearch_cli.py search "AAPL" --domain finance --sub_domain finance.us_s
 Step 1: Discover sub_domains for academic:
 
 ```bash
-python anysearch_cli.py list_domains --domain academic
+python scripts/anysearch_cli.py list_domains --domain academic
 ```
 
 Step 2: Search by DOI:
 
 ```bash
-python anysearch_cli.py search "10.1038/s41586-020-2649-2" --domain academic --sub_domain academic.doi --max_results 3
+python scripts/anysearch_cli.py search "10.1038/s41586-020-2649-2" --domain academic --sub_domain academic.doi --max_results 3
 ```
 
 ### Scenario 5: Vertical search — security vulnerability (CVE)
 
 ```bash
-python anysearch_cli.py list_domains --domain security
+python scripts/anysearch_cli.py list_domains --domain security
 ```
 
 ```bash
-python anysearch_cli.py search "CVE-2024-3094" --domain security --sub_domain security.cve --max_results 3
+python scripts/anysearch_cli.py search "CVE-2024-3094" --domain security --sub_domain security.cve --max_results 3
 ```
 
 ### Scenario 6: Vertical search — legal document or case
 
 ```bash
-python anysearch_cli.py list_domains --domain legal
+python scripts/anysearch_cli.py list_domains --domain legal
 ```
 
 ```bash
-python anysearch_cli.py search "contract dispute damages" --domain legal --sub_domain legal.case_law --max_results 5
+python scripts/anysearch_cli.py search "contract dispute damages" --domain legal --sub_domain legal.case_law --max_results 5
 ```
 
 ### Scenario 7: Vertical search — code search
 
 ```bash
-python anysearch_cli.py search "python async http client" --domain code --sub_domain code.general --max_results 5
+python scripts/anysearch_cli.py search "python async http client" --domain code --sub_domain code.general --max_results 5
 ```
 
 ### Scenario 8: Batch search — multiple independent queries in one call
 
 ```bash
-python anysearch_cli.py batch_search --query "AAPL stock price" --query "TSLA earnings 2025" --query "GOOG market cap"
+python scripts/anysearch_cli.py batch_search --query "AAPL stock price" --query "TSLA earnings 2025" --query "GOOG market cap"
 ```
 
 With full query objects (vertical domain + parameters):
 
 ```bash
-python anysearch_cli.py batch_search --queries '[{"query":"AAPL","domain":"finance","sub_domain":"finance.us_stock","zone":"cn"},{"query":"python async http","domain":"code","sub_domain":"code.general"}]'
+python scripts/anysearch_cli.py batch_search --queries '[{"query":"AAPL","domain":"finance","sub_domain":"finance.us_stock","zone":"cn"},{"query":"python async http","domain":"code","sub_domain":"code.general"}]'
 ```
 
 From a JSON file:
 
 ```bash
-python anysearch_cli.py batch_search --queries @queries.json
+python scripts/anysearch_cli.py batch_search --queries @queries.json
 ```
 
 ### Scenario 9: Extract full page content — read beyond search snippets
 
 ```bash
-python anysearch_cli.py extract "https://en.wikipedia.org/wiki/Quantum_computing"
+python scripts/anysearch_cli.py extract "https://en.wikipedia.org/wiki/Quantum_computing"
 ```
 
 ```bash
-python anysearch_cli.py extract --url "https://example.com/news/article-12345"
+python scripts/anysearch_cli.py extract --url "https://example.com/news/article-12345"
 ```
 
 ### Scenario 10: News search with time filter
 
 ```bash
-python anysearch_cli.py search "AI regulation" --content_types news --freshness day --max_results 5
+python scripts/anysearch_cli.py search "AI regulation" --content_types news --freshness day --max_results 5
 ```
 
 ### Scenario 11: Search with API key
 
 ```bash
-python anysearch_cli.py search "climate change policy 2025" --api_key sk_xxxxxxxxxxxxxx --max_results 3
+python scripts/anysearch_cli.py search "climate change policy 2025" --api_key sk_xxxxxxxxxxxxxx --max_results 3
 ```
 
 ### Scenario 12: China-specific vertical search (requires zone=cn)
 
 ```bash
-python anysearch_cli.py list_domains --domain finance
+python scripts/anysearch_cli.py list_domains --domain finance
 ```
 
 ```bash
-python anysearch_cli.py search "600519" --domain finance --sub_domain finance.cn_stock --zone cn --max_results 5
+python scripts/anysearch_cli.py search "600519" --domain finance --sub_domain finance.cn_stock --zone cn --max_results 5
 ```
 
 ---

@@ -6,20 +6,21 @@ ENDPOINT="https://api.anysearch.com/mcp"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 _load_env() {
-  local env_path="$SCRIPT_DIR/.env"
-  if [[ -f "$env_path" ]]; then
-    while IFS= read -r line || [[ -n "$line" ]]; do
-      line="${line%%#*}"
-      line="$(echo "$line" | xargs 2>/dev/null || true)"
-      [[ -z "$line" || "$line" != *=* ]] && continue
-      local key="${line%%=*}"
-      local val="${line#*=}"
-      val="$(echo "$val" | sed 's/^["\x27]\|["\x27]$//g')"
-      if [[ -z "${!key:-}" ]]; then
-        export "$key=$val"
-      fi
-    done < "$env_path"
-  fi
+  for env_path in "$SCRIPT_DIR/.env" "$SCRIPT_DIR/../.env"; do
+    if [[ -f "$env_path" ]]; then
+      while IFS= read -r line || [[ -n "$line" ]]; do
+        line="${line%%#*}"
+        line="$(echo "$line" | xargs 2>/dev/null || true)"
+        [[ -z "$line" || "$line" != *=* ]] && continue
+        local key="${line%%=*}"
+        local val="${line#*=}"
+        val="$(echo "$val" | sed 's/^["\x27]\|["\x27]$//g')"
+        if [[ -z "${!key:-}" ]]; then
+          export "$key=$val"
+        fi
+      done < "$env_path"
+    fi
+  done
 }
 
 _load_env
@@ -338,7 +339,7 @@ _cmd_doc() {
 ## CLI Invocation (Bash)
 
 ```bash
-bash <skill_dir>/anysearch_cli.sh <command> [options]
+bash <skill_dir>/scripts/anysearch_cli.sh <command> [options]
 ```
 
 ## Available Commands
@@ -394,17 +395,17 @@ Truncated at 50,000 chars. HTML pages only.
 User query
   |
   +-- Has structured identifiers? (Stock:/CVE:/DOI:/IATA:/patent etc.)
-  |     YES -> 1) bash anysearch_cli.sh list_domains --domain X
+  |     YES -> 1) bash scripts/anysearch_cli.sh list_domains --domain X
   |             2) read query_format from result -> construct query accordingly
-  |             3) bash anysearch_cli.sh search "<query>" --domain X --sub_domain Y --zone cn
+  |             3) bash scripts/anysearch_cli.sh search "<query>" --domain X --sub_domain Y --zone cn
   |
   +-- Multiple independent intents?
-  |     YES -> bash anysearch_cli.sh batch_search --query "..." --query "..."
+  |     YES -> bash scripts/anysearch_cli.sh batch_search --query "..." --query "..."
   |
   +-- Need deeper content than snippets?
-        YES -> bash anysearch_cli.sh extract "https://example.com/article"
+        YES -> bash scripts/anysearch_cli.sh extract "https://example.com/article"
 
-  Otherwise -> bash anysearch_cli.sh search "<general query>"
+  Otherwise -> bash scripts/anysearch_cli.sh search "<general query>"
 ```
 
 ---
@@ -433,21 +434,21 @@ and strictly obey the returned semantic constraints:
 ### Scenario 1: General web search — look up a factual question
 
 ```bash
-bash anysearch_cli.sh search "What is the capital of France"
+bash scripts/anysearch_cli.sh search "What is the capital of France"
 ```
 
 ```bash
-bash anysearch_cli.sh search "quantum computing breakthroughs 2025" --max_results 5 --freshness month
+bash scripts/anysearch_cli.sh search "quantum computing breakthroughs 2025" --max_results 5 --freshness month
 ```
 
 ### Scenario 2: Search with content type filter — find video or image results
 
 ```bash
-bash anysearch_cli.sh search "how to bake sourdough bread" --content_types video --max_results 3
+bash scripts/anysearch_cli.sh search "how to bake sourdough bread" --content_types video --max_results 3
 ```
 
 ```bash
-bash anysearch_cli.sh search "Mount Everest" --content_types image --max_results 5
+bash scripts/anysearch_cli.sh search "Mount Everest" --content_types image --max_results 5
 ```
 
 ### Scenario 3: Vertical search — stock market data (structured identifier)
@@ -455,93 +456,93 @@ bash anysearch_cli.sh search "Mount Everest" --content_types image --max_results
 Step 1: Discover available sub_domains for finance:
 
 ```bash
-bash anysearch_cli.sh list_domains --domain finance
+bash scripts/anysearch_cli.sh list_domains --domain finance
 ```
 
 Step 2: Search with the correct sub_domain and query format:
 
 ```bash
-bash anysearch_cli.sh search "AAPL" --domain finance --sub_domain finance.us_stock --zone cn --max_results 5
+bash scripts/anysearch_cli.sh search "AAPL" --domain finance --sub_domain finance.us_stock --zone cn --max_results 5
 ```
 
 ### Scenario 4: Vertical search — academic paper lookup
 
 ```bash
-bash anysearch_cli.sh list_domains --domain academic
+bash scripts/anysearch_cli.sh list_domains --domain academic
 ```
 
 ```bash
-bash anysearch_cli.sh search "10.1038/s41586-020-2649-2" --domain academic --sub_domain academic.doi --max_results 3
+bash scripts/anysearch_cli.sh search "10.1038/s41586-020-2649-2" --domain academic --sub_domain academic.doi --max_results 3
 ```
 
 ### Scenario 5: Vertical search — security vulnerability (CVE)
 
 ```bash
-bash anysearch_cli.sh list_domains --domain security
+bash scripts/anysearch_cli.sh list_domains --domain security
 ```
 
 ```bash
-bash anysearch_cli.sh search "CVE-2024-3094" --domain security --sub_domain security.cve --max_results 3
+bash scripts/anysearch_cli.sh search "CVE-2024-3094" --domain security --sub_domain security.cve --max_results 3
 ```
 
 ### Scenario 6: Vertical search — legal document or case
 
 ```bash
-bash anysearch_cli.sh list_domains --domain legal
+bash scripts/anysearch_cli.sh list_domains --domain legal
 ```
 
 ```bash
-bash anysearch_cli.sh search "contract dispute damages" --domain legal --sub_domain legal.case_law --max_results 5
+bash scripts/anysearch_cli.sh search "contract dispute damages" --domain legal --sub_domain legal.case_law --max_results 5
 ```
 
 ### Scenario 7: Batch search — multiple independent queries in one call
 
 ```bash
-bash anysearch_cli.sh batch_search --query "AAPL stock price" --query "TSLA earnings 2025" --query "GOOG market cap"
+bash scripts/anysearch_cli.sh batch_search --query "AAPL stock price" --query "TSLA earnings 2025" --query "GOOG market cap"
 ```
 
 With full query objects:
 
 ```bash
-bash anysearch_cli.sh batch_search --queries '[{"query":"AAPL","domain":"finance","sub_domain":"finance.us_stock"},{"query":"python async http","domain":"code","sub_domain":"code.general"}]'
+bash scripts/anysearch_cli.sh batch_search --queries '[{"query":"AAPL","domain":"finance","sub_domain":"finance.us_stock"},{"query":"python async http","domain":"code","sub_domain":"code.general"}]'
 ```
 
 From a JSON file:
 
 ```bash
-bash anysearch_cli.sh batch_search --queries @queries.json
+bash scripts/anysearch_cli.sh batch_search --queries @queries.json
 ```
 
 ### Scenario 8: Extract full page content
 
 ```bash
-bash anysearch_cli.sh extract "https://en.wikipedia.org/wiki/Quantum_computing"
+bash scripts/anysearch_cli.sh extract "https://en.wikipedia.org/wiki/Quantum_computing"
 ```
 
 ```bash
-bash anysearch_cli.sh extract --url "https://example.com/news/article-12345"
+bash scripts/anysearch_cli.sh extract --url "https://example.com/news/article-12345"
 ```
 
 ### Scenario 9: News search with time filter
 
 ```bash
-bash anysearch_cli.sh search "AI regulation" --content_types news --freshness day --max_results 5
+bash scripts/anysearch_cli.sh search "AI regulation" --content_types news --freshness day --max_results 5
 ```
 
 ### Scenario 10: Search with API key
 
 ```bash
-bash anysearch_cli.sh search "climate change policy 2025" --api_key sk_xxxxxxxxxxxxxx --max_results 3
+bash scripts/anysearch_cli.sh search "climate change policy 2025" --api_key sk_xxxxxxxxxxxxxx --max_results 3
 ```
 
 ### Scenario 11: China-specific vertical search (requires zone=cn)
 
 ```bash
-bash anysearch_cli.sh list_domains --domain finance
+bash scripts/anysearch_cli.sh list_domains --domain finance
 ```
 
 ```bash
-bash anysearch_cli.sh search "600519" --domain finance --sub_domain finance.cn_stock --zone cn --max_results 5
+bash scripts/anysearch_cli.sh search "600519" --domain finance --sub_domain finance.cn_stock --zone cn --max_results 5
 ```
 
 ---
