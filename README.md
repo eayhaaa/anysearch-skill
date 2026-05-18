@@ -24,7 +24,10 @@ unzip anysearch-skill.zip
 # OpenCode:       mv anysearch-skill ~/.opencode/skills/anysearch
 # Cursor/Windsurf: mv anysearch-skill <project>/.skills/anysearch
 # Generic:        mv anysearch-skill <your_agent_skill_dir>/anysearch
+# Shared agents:  mv anysearch-skill ~/.agents/skills/anysearch
 ```
+
+`~/.agents/skills/` is a useful shared install location when multiple AI tools read from the same skill directory, including Codex, Cursor, and OpenClaw personal agent skills.
 
 ### For Humans
 
@@ -71,6 +74,7 @@ Run these checks in order. The first success determines the active CLI:
 ```bash
 # Check Python (recommended)
 python --version   # Need >= 3.6, requires `requests` library
+python3 --version  # Need >= 3.6, requires `requests` library
 # Check Node.js (alternative)
 node --version     # Need >= 12, no external dependencies
 # Check Shell (fallback)
@@ -79,6 +83,8 @@ node --version     # Need >= 12, no external dependencies
 
 Priority: **Python > Node.js > Shell**
 
+Important: do not assume `python` exists. On many macOS systems, the correct executable is `python3`. Check both `python` and `python3`; if either works, Python is available.
+
 ### Step 2: Run entry test (probe all available runtimes)
 
 Run the `doc` command with **each available** runtime to verify the skill works, and observe which runs without errors or warnings:
@@ -86,6 +92,9 @@ Run the `doc` command with **each available** runtime to verify the skill works,
 ```bash
 # Python
 python <skill_dir>/scripts/anysearch_cli.py doc
+
+# Python 3 fallback (common on macOS)
+python3 <skill_dir>/scripts/anysearch_cli.py doc
 
 # Node.js (if available)
 node <skill_dir>/scripts/anysearch_cli.js doc
@@ -115,6 +124,13 @@ echo "Runtime: Python" > <skill_dir>/runtime.conf
 echo "Command: python <skill_dir>/scripts/anysearch_cli.py" >> <skill_dir>/runtime.conf
 ```
 
+Example for Python 3:
+
+```bash
+echo "Runtime: Python" > <skill_dir>/runtime.conf
+echo "Command: python3 <skill_dir>/scripts/anysearch_cli.py" >> <skill_dir>/runtime.conf
+```
+
 Example for Node.js:
 
 ```bash
@@ -142,6 +158,12 @@ echo "Command: bash <skill_dir>/scripts/anysearch_cli.sh" >> <skill_dir>/runtime
 
 ```bash
 python <skill_dir>/scripts/anysearch_cli.py search "hello world" --max_results 1
+```
+
+If your system does not provide `python`, use:
+
+```bash
+python3 <skill_dir>/scripts/anysearch_cli.py search "hello world" --max_results 1
 ```
 
 A successful JSON response confirms the API connection is working.
