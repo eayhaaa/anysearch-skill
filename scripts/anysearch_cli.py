@@ -14,13 +14,13 @@ if sys.stderr.encoding != "utf-8":
     sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
 
 ENDPOINT = "https://api.anysearch.com/mcp"
-
+REST_SEARCH_ENDPOINT = "https://api.anysearch.com/v1/search"
 
 def _load_env():
     script_dir = os.path.dirname(os.path.abspath(__file__))
     for env_path in [os.path.join(script_dir, ".env"), os.path.join(script_dir, "..", ".env")]:
         if os.path.isfile(env_path):
-            with open(env_path, "r", encoding="utf-8") as f:
+            with open(env_path, "r", encoding="utf-8-sig") as f:
                 for line in f:
                     line = line.strip()
                     if not line or line.startswith("#"):
@@ -28,9 +28,9 @@ def _load_env():
                     if "=" not in line:
                         continue
                     key, _, value = line.partition("=")
-                    key = key.strip()
-                    value = value.strip().strip("\"'")
-                    if key not in os.environ:
+                    key = key.strip().lstrip("\ufeff")
+                    value = value.strip().strip("\"'").strip()
+                   if key and value:
                         os.environ[key] = value
 
 
@@ -59,6 +59,61 @@ def _build_headers(api_key: str) -> dict:
         headers["Authorization"] = f"Bearer {api_key}"
     return headers
 
+def _normalize_rest_response(data: dict) -> dict:
+    if isinstance(data, dict) and "code" in data:
+        if data.get("code") != 0:
+            return data
+        payload = data.get("data", {})
+        if isinstance(payload, dict):
+            return payload
+    return data
+
+
+def _call_search_api(arguments: dict, api_key: str) -> str:
+    body = {"query": arguments["query"]}
+
+    if arguments.get("max_results") is not None:
+        body["max_results"] = arguments["max_results"]
+
+    if arguments.get("domain"):
+        body["domains"] = [arguments["domain"]]
+
+    if arguments.get("sub_domain"):
+        body["tags"] = [arguments["sub_domain"]]
+
+    if arguments.get("content_types"):
+        body["content_types"] = arguments["content_types"]
+
+    if arguments.get("zone"):
+        body["zone"] = arguments["zone"]
+
+    if arguments.get("freshness"):
+        body["constraint"] = {"freshness": arguments["freshness"]}
+
+    try:
+        resp = requests.post(
+            REST_SEARCH_ENDPOINT,
+            json=body,
+            headers=_build_rest_headers(api_key),
+            timeout=30,
+        )
+        resp.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        print(f"HTTP Error: {e}", file=sys.stderr)
+        try:
+            detail = resp.json()
+            print(f"Response: {json.dumps(detail, ensure_ascii=False)}", file=sys.stderr)
+        except Exception:
+            print(f"Response body: {resp.text[:500]}", file=sys.stderr)
+        sys.exit(1)
+    except requests.exceptions.ConnectionError:
+        print("Connection Error: Unable to reach the REST search endpoint.", file=sys.stderr)
+        sys.exit(1)
+    except requests.exceptions.Timeout:
+        print("Timeout: The REST search request timed out.", file=sys.stderr)
+        sys.exit(1)
+
+    return json.dumps(_normalize_rest_response(resp.json()), indent=2, ensure_ascii=False)
 
 def _call_api(tool_name: str, arguments: dict, api_key: str) -> str:
     payload = {
@@ -132,7 +187,7 @@ def cmd_search(args):
     if args.freshness:
         arguments["freshness"] = args.freshness
 
-    print(_call_api("search", arguments, args.api_key))
+    print(_call_search_api(arguments, args.api_key))
 
 
 def cmd_list_domains(args):
