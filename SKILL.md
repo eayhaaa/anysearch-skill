@@ -64,7 +64,7 @@ Run the `doc` command via the platform-selected CLI (see Platform Detection belo
 
 | Runtime | Command |
 |---------|---------|
-| Python | `python <skill_dir>/scripts/anysearch_cli.py doc` |
+| Python | `python <skill_dir>/scripts/anysearch_cli.py doc` or `python3 <skill_dir>/scripts/anysearch_cli.py doc` |
 | Node.js | `node <skill_dir>/scripts/anysearch_cli.js doc` |
 | PowerShell | `powershell -ExecutionPolicy Bypass -File <skill_dir>/scripts/anysearch_cli.ps1 doc` |
 | Bash/sh | `bash <skill_dir>/scripts/anysearch_cli.sh doc` |
@@ -139,8 +139,10 @@ Run the following checks in order. The first success determines the active CLI:
 **Step 1 — Check Python**
 ```
 python --version 2>&1
+python3 --version 2>&1
 ```
-- If exit code 0 and version >= 3.6 → use `anysearch_cli.py`
+- If either `python` or `python3` exists with version >= 3.6 → use `anysearch_cli.py`
+- On many macOS systems, `python` is absent while `python3` is available. Treat both names as valid probes.
 - Dependency: `requests` library (typically pre-installed)
 
 **Step 2 — Check Node.js** (if Python failed)
@@ -166,7 +168,7 @@ Once the active CLI is determined, all tool calls use the same subcommand syntax
 
 | Runtime | Invocation |
 |---------|-----------|
-| Python | `python <skill_dir>/scripts/anysearch_cli.py <command> [options]` |
+| Python | `python <skill_dir>/scripts/anysearch_cli.py <command> [options]` or `python3 <skill_dir>/scripts/anysearch_cli.py <command> [options]` |
 | Node.js | `node <skill_dir>/scripts/anysearch_cli.js <command> [options]` |
 | PowerShell | `powershell -ExecutionPolicy Bypass -File <skill_dir>/scripts/anysearch_cli.ps1 <command> [options]` |
 | Bash/sh | `bash <skill_dir>/scripts/anysearch_cli.sh <command> [options]` |
@@ -176,4 +178,4 @@ Run `<command> --help` for per-command usage.
 ### Fallback & Error Handling
 
 - If the selected CLI fails with a runtime error (missing dependency, version too old, etc.), fall through to the next runtime in priority order.
-- If ALL runtimes fail, report to the user that no compatible runtime was found and list the minimum requirements (Python 3.6+ with `requests`, or Node.js 12+, or PowerShell 5.1+, or bash 4+).
+- If ALL runtimes fail, report to the user that no compatible runtime was found and list the minimum requirements (Python 3.6+ via `python` or `python3` with `requests`, or Node.js 12+, or PowerShell 5.1+, or bash 4+).
