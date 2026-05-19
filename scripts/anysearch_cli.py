@@ -14,7 +14,6 @@ if sys.stderr.encoding != "utf-8":
     sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
 
 ENDPOINT = "https://api.anysearch.com/mcp"
-REST_SEARCH_ENDPOINT = "https://api.anysearch.com/v1/search"
 
 def _load_env():
     """Load API keys from .env files near the skill.
@@ -67,89 +66,6 @@ def _build_headers(api_key: str) -> dict:
     if api_key:
         headers["Authorization"] = f"Bearer {api_key}"
     return headers
-
-
-def _build_rest_headers(api_key: str) -> dict:
-    """Build headers for the documented REST search endpoint.
-
-    The bundled MCP helper keeps using _build_headers(). The search command uses
-    /v1/search directly, so it sends explicit REST-friendly headers.
-    """
-    headers = {
-        "Content-Type": "application/json",
-        "Accept": "application/json",
-        "User-Agent": "AnySearch-CLI/2.0.0",
-    }
-    if api_key:
-        headers["Authorization"] = f"Bearer {api_key}"
-    return headers
-
-
-def _normalize_rest_response(data: dict) -> dict:
-    """Normalize supported REST response shapes for CLI output.
-
-    Some responses are returned directly as {"results": ..., "metadata": ...};
-    others are wrapped as {"code": 0, "message": "success", "data": ...}.
-    """
-    if isinstance(data, dict) and "code" in data:
-        if data.get("code") != 0:
-            return data
-        payload = data.get("data", {})
-        if isinstance(payload, dict):
-            return payload
-    return data
-
-
-def _call_search_api(arguments: dict, api_key: str) -> str:
-    """Call the documented REST /v1/search endpoint for CLI search.
-
-    This keeps the search verification command lightweight and avoids sending a
-    direct JSON-RPC tools/call request to the MCP endpoint.
-    """
-    body = {"query": arguments["query"]}
-
-    if arguments.get("max_results") is not None:
-        body["max_results"] = arguments["max_results"]
-
-    if arguments.get("domain"):
-        body["domains"] = [arguments["domain"]]
-
-    if arguments.get("sub_domain"):
-        body["tags"] = [arguments["sub_domain"]]
-
-    if arguments.get("content_types"):
-        body["content_types"] = arguments["content_types"]
-
-    if arguments.get("zone"):
-        body["zone"] = arguments["zone"]
-
-    if arguments.get("freshness"):
-        body["constraint"] = {"freshness": arguments["freshness"]}
-
-    try:
-        resp = requests.post(
-            REST_SEARCH_ENDPOINT,
-            json=body,
-            headers=_build_rest_headers(api_key),
-            timeout=30,
-        )
-        resp.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        print(f"HTTP Error: {e}", file=sys.stderr)
-        try:
-            detail = resp.json()
-            print(f"Response: {json.dumps(detail, ensure_ascii=False)}", file=sys.stderr)
-        except Exception:
-            print(f"Response body: {resp.text[:500]}", file=sys.stderr)
-        sys.exit(1)
-    except requests.exceptions.ConnectionError:
-        print("Connection Error: Unable to reach the REST search endpoint.", file=sys.stderr)
-        sys.exit(1)
-    except requests.exceptions.Timeout:
-        print("Timeout: The REST search request timed out.", file=sys.stderr)
-        sys.exit(1)
-
-    return json.dumps(_normalize_rest_response(resp.json()), indent=2, ensure_ascii=False)
 
 def _call_api(tool_name: str, arguments: dict, api_key: str) -> str:
     payload = {
@@ -223,7 +139,7 @@ def cmd_search(args):
     if args.freshness:
         arguments["freshness"] = args.freshness
 
-    print(_call_search_api(arguments, args.api_key))
+    print(_call_api("search", arguments, args.api_key))
 
 
 def cmd_list_domains(args):
