@@ -1,6 +1,6 @@
 # AnySearch Skill
 
-Unified real-time search engine skill for AI agents. Supports general web search, vertical domain search (23 domains), parallel batch search, and full-page content extraction.
+Unified real-time search engine skill for AI agents. Supports general web search, vertical domain search, parallel batch search, and full-page content extraction.
 
 ## Download & Install
 
