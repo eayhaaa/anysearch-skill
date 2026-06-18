@@ -216,3 +216,7 @@ anysearch-skill/              # renamed to "anysearch" on install (see above)
         ├── constants.json    # Domain list + endpoint
         └── doc_spec.md       # AI-facing interface spec (rendered by `doc`)
 ```
+
+## Download History
+
+[![Download History](https://skill-history.com/chart/anysearch-ai/anysearch.svg)](https://skill-history.com/anysearch-ai/anysearch)
